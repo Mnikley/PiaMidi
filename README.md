@@ -1,32 +1,52 @@
-# AudioToMidi
+# PiaMidi
+
 Piano-learning app to download piano-audio from various sources and convert them to .midi
 
+---
+
+# Quickstart
+
+- Clone repository: ```git clone https://github.com/Mnikley/PiaMidi```
+- Run app: ```python run.py```
+
+
+---
+
+
+
 # Sources
-## piano_transcription_interference repo
-https://github.com/bytedance/piano_transcription
+### Piano transcription to MIDI
+- https://github.com/bytedance/piano_transcription
+- License: Apache 2.0
 
-## trained piano model .pth:
-[1] Qiuqiang Kong, Bochen Li, Xuchen Song, Yuan Wan, Yuxuan Wang., High-resolution Piano Transcription with Pedals by Regressing Onsets and Offsets Times_v0.1, 2020
-DL from: https://zenodo.org/record/4034264#.X7vAB2gzZPY
+### Trained model:
+- Qiuqiang Kong, Bochen Li, Xuchen Song, Yuan Wan, Yuxuan Wang., High-resolution Piano Transcription with Pedals by Regressing Onsets and Offsets Times_v0.1, 2020
+- Downloaded from: https://zenodo.org/record/4034264#.X7vAB2gzZPY
 
-## youtube-dl
-https://github.com/ytdl-org/youtube-dl#embedding-youtube-dl
+### youtube-dl
+- https://github.com/ytdl-org/youtube-dl#embedding-youtube-dl
+- License: The Unlicense
 
-## spotdl
-https://github.com/spotDL/spotify-downloader
+### spotify-downloader
+- https://github.com/spotDL/spotify-downloader
+- License: MIT
 
-## ffmpeg
-https://ffmpeg.org/
+### FFmpeg
+- https://ffmpeg.org/
+- https://github.com/FFmpeg/FFmpeg
+- License: Mainly LGPL-licensed; https://github.com/FFmpeg/FFmpeg/blob/master/LICENSE.md
 
-## Midi player
-http://midisheetmusic.com/download.html
+### MidiSheetMusic
+- http://midisheetmusic.com/
+- Developed by [Madhav Vaidyanathan](midisheetmusic.sf@gmail.com)
+
+---
 
 # pyinstaller command
-pyinstaller --noconfirm --onedir --console --name "AudioToMidi" --add-data "C:/Users/Glory/Desktop/testing/audio_to_midi/lib;lib/" --add-data "C:/Users/Glory/Desktop/testing/audio_to_midi/ffmpeg.exe;." --collect-submodules "sklearn" --collect-all "librosa" --collect-all "ytmusicapi"  "C:/Users/Glory/Desktop/testing/audio_to_midi/transcribe_v2.py"
+```pyinstaller --noconfirm --onedir --console --name "PiaMidi" --add-data "lib;lib/" --add-data "ffmpeg.exe;." --collect-submodules "sklearn" --collect-all "librosa" --collect-all "ytmusicapi"  "transcribe_v2.py"```
+
+--- 
 
 # TODO:
-- download ffmpeg.exe if not exists
-- download MidiSheetMusic-2.6.2.exe if not exists
-- download note_F1=0.9677_pedal_F1=0.9186.pth if not exists
-- install requirements on first run instead of creating that huge package
 - Disclaimer info at start (built on top of a couple of libraries.. sources erwähnen); Will only work properly on songs with pure piano sounds
+- Fix bug when moving latest file in transcribe_v2.py move_latest_file_to_results_folder()

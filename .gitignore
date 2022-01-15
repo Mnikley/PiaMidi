@@ -133,3 +133,8 @@ lib/
 ffmpeg.exe
 .idea/
 results/
+*.mp3
+*.m4a
+*.wma
+*.wav
+*.aiff

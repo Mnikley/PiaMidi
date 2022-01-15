@@ -363,7 +363,8 @@ class UI(Tk):
             # start midi conversion
             self.process()
         else:
-            self.change_status("Moving file failed, .midi conversion aborted")
+            self.change_status("Retrying to move file ..")
+            # self.move_latest_file_to_results_folder()
 
     def loading(self, thread):
         """Loading animation while thread is running"""
