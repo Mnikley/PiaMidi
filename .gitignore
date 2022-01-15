@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# project definitions
+lib/
+ffmpeg.exe
+.idea/
+results/

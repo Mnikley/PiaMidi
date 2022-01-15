@@ -104,7 +104,7 @@ class YTDLLogger(object):
 class UI(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.title("Audio to Midi")
+        self.title("PiaMidi Transcriber")
         self.widgets = {}  # dict holding relevant UI elements
         self.executor = ThreadPoolExecutor(max_workers=4)
         self.build_interface()
@@ -126,7 +126,11 @@ class UI(Tk):
         # launch midi player button
         self.widgets["launch_midi_player"] = Button(play_box, text="Lauch Midi Player", command=self.launch_midi_player)
         self.widgets["launch_midi_player"].pack()
-        create_tooltip(self.widgets["launch_midi_player"], "Launch external midi player, Windows only!")
+        if not os.path.exists("lib" + os.sep + "MidiSheetMusic-2.6.2.exe"):
+            self.widgets["launch_midi_player"]["state"] = "disabled"
+            create_tooltip(self.widgets["launch_midi_player"], "External midi player not found!")
+        else:
+            create_tooltip(self.widgets["launch_midi_player"], "Launch external midi player")
 
         # sub frame for load & convert buttons
         load_box = LabelFrame(master_box, text="(Down-)load & convert")
