@@ -2,13 +2,14 @@
 
 Piano-learning app to download piano-audio from various sources and convert them to .midi
 
+![Screenshot PiaMidi](https://user-images.githubusercontent.com/75040444/149627235-c8f1ec08-43ee-4174-9467-730f6f419908.png)
+
 ---
 
 # Quickstart
 
 - Clone repository: ```git clone https://github.com/Mnikley/PiaMidi```
 - Run app: ```python run.py```
-
 
 ---
 
