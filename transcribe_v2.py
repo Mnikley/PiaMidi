@@ -1,6 +1,5 @@
 import os
 import sys
-import glob
 import subprocess
 import platform
 from tkinter import Tk, Toplevel, StringVar
@@ -14,6 +13,7 @@ from piano_transcription_inference import PianoTranscription, sample_rate, load_
 from spotdl.search import SpotifyClient
 from spotdl.parsers import parse_query
 from spotdl.download import DownloadManager
+import torch
 
 
 class PrintLogger(object):
@@ -110,6 +110,13 @@ class UI(Tk):
         self.build_interface()
         self.audio_file = None  # stores path of local .mp3 file (either by chosing or after DL/conversion from YT)
         self.audio_url = None  # stores entered YT-url
+        self.current_file_dl = None  # stores temporary filename during download
+        if torch.cuda.is_available():
+            self.transcribe_engine = "cuda"
+        else:
+            self.transcribe_engine = "cpu"
+        self.change_status(f"Set {self.transcribe_engine.upper()} as engine")
+
 
     """ ################################### Interface widgets ######################################### """
 
@@ -146,12 +153,6 @@ class UI(Tk):
         self.widgets["load_yt_url"].pack(side="left")
         create_tooltip(self.widgets["load_yt_url"], "Enter URL to download & convert to .mp3 and .midi afterwards\n"
                                                     "Supported tested platforms: Youtube, Soundcloud, Spotify")
-
-        # process button
-        # self.widgets["process"] = Button(load_box, text="Convert to Midi", command=self.process)
-        # self.widgets["process"]["state"] = "disabled"
-        # self.widgets["process"].pack(side="left")
-        # create_tooltip(self.widgets["process"], "Process a loaded .mp3 file and convert to Midi")
 
         # separator
         sep_bottom = Separator(self, orient="horizontal")
@@ -195,24 +196,25 @@ class UI(Tk):
     def process(self):
         """Convert audio data to .midi file"""
         def callback():
-            self.change_status("Trying to download from spotify URL ..")
+            # self.change_status("Trying to download from spotify URL ..")
 
             # stdout to status-bar
             self.stdout_to_label()
 
-            # create results folder if doesnt exist
-            if not os.path.exists("results"):
-                os.mkdir("results")
-                print("Created folder results")
+            # # create results folder if doesnt exist
+            # if not os.path.exists("results"):
+            #     os.mkdir("results")
+            #     print("Created folder results")
 
-            midi_file_name = os.getcwd() + os.sep + "results" + os.sep + \
-                             os.path.splitext(os.path.split(self.audio_file)[-1])[0] + ".midi"
+            # midi_file_name = os.getcwd() + os.sep + "results" + os.sep + \
+            #                  os.path.splitext(os.path.split(self.audio_file)[-1])[0] + ".midi"
+            midi_file_name = os.path.splitext(self.audio_file)[0] + ".midi"
 
             # Load audio
             (audio, _) = load_audio(self.audio_file, sr=sample_rate, mono=True)
 
             # Transcriptor
-            transcriptor = PianoTranscription(device='cpu',
+            transcriptor = PianoTranscription(device=self.transcribe_engine,
                                               checkpoint_path="lib" + os.sep + "note_F1=0.9677_pedal_F1=0.9186.pth")
 
             # Transcribe and write out to MIDI file
@@ -248,7 +250,10 @@ class UI(Tk):
             self.load_youtube_url()
 
     def load_spotify_url(self):
-        """DL spotify URL via spotdl"""
+        """DL spotify URL via spotdl
+        TODO: fix bug when file exists but doesnt start process
+        TODO: fix bug when file exists and process isnt initiated
+        """
         def callback():
             self.change_status("Trying to download spotify song ..")
 
@@ -291,7 +296,8 @@ class UI(Tk):
                 try:
                     song = parse_query([self.audio_url], "mp3", False, False, "musixmatch", 4, None)
                     downloader.download_single_song(song[0])
-                    self.change_status("DL OK")
+                    self.audio_file = song[-1].file_name + "." + downloader.arguments["output_format"]
+                    self.change_status(f"DL OK: {self.audio_file}")
                 except Exception as e:
                     exc = e
             # stdout to console
@@ -299,7 +305,7 @@ class UI(Tk):
             if exc:
                 self.change_status(exc)
             else:
-                self.move_latest_file_to_results_folder()
+                self.move_and_process()
 
         # start threads, initiate loading
         main_thread = self.executor.submit(callback)
@@ -308,11 +314,11 @@ class UI(Tk):
     def load_youtube_url(self):
         """Load and convert youtube video to mp3 via youtube-dl"""
         def ytdl_hook(d):
+            self.audio_file = d["filename"]
             if d["status"] == "downloading":
                 self.change_status(f"Downloading.. {d['_percent_str']} (ETA {d['_eta_str']})")
             if d['status'] == 'finished':
-                time.sleep(1)
-                self.move_latest_file_to_results_folder()
+                self.move_and_process()
 
         def callback():
             self.change_status("Downloading & converting youtube URL ..")
@@ -345,26 +351,18 @@ class UI(Tk):
         """Change status text at bottom"""
         self.widgets["status_var"].set(f"Status: {status_text}")
 
-    def move_latest_file_to_results_folder(self):
-        """Moves the most recent file to results folder and starts conversion process"""
-        time.sleep(0.5)
+    def move_and_process(self):
+        """Moves file defined in print(self.current_file_dl) to results folder and starts conversion process"""
+        if not os.path.exists("results"):
+            os.mkdir("results")
 
-        # get latest files
-        list_of_files = glob.glob(os.getcwd() + os.sep + "*")
-        latest_file = max(list_of_files, key=os.path.getctime)
+        # move file
+        os.rename(os.path.join(os.getcwd() + os.sep + self.audio_file),
+                  os.path.join(os.getcwd() + os.sep + "results" + os.sep + self.audio_file))
 
-        # move file to results folder
-        new_path = os.path.dirname(latest_file) + os.sep + "results" + os.sep + os.path.split(latest_file)[-1]
-        if new_path.split(".")[-1].lower() in ["mp3", "m4a", "wma", "wav", "aiff"]:
-            os.replace(latest_file, new_path)
-            self.audio_file = new_path
-            self.change_status(f"DL OK - starting .midi conversion ..")
-            time.sleep(0.5)
-            # start midi conversion
-            self.process()
-        else:
-            self.change_status("Retrying to move file ..")
-            # self.move_latest_file_to_results_folder()
+        # TODO: following line produces [WinError 2] for some reason which doesnt affect further processes ..
+        self.audio_file = os.path.join(os.getcwd() + os.sep + "results" + os.sep + self.audio_file)
+        self.process()
 
     def loading(self, thread):
         """Loading animation while thread is running"""
