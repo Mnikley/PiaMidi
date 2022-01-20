@@ -303,7 +303,13 @@ class UI(Tk):
             # stdout to console
             self.stdout_to_console()
             if exc:
-                self.change_status(exc)
+                if isinstance(exc, OSError) and "already downloaded" in exc.args[0]:
+                    self.audio_file = exc.args[0].split(" already downloaded")[0] + "." + \
+                                      downloader.arguments["output_format"]
+                    print(self.audio_file)
+                    self.move_and_process()
+                else:
+                    self.change_status(exc)
             else:
                 self.move_and_process()
 
@@ -357,11 +363,22 @@ class UI(Tk):
             os.mkdir("results")
 
         # move file
-        os.rename(os.path.join(os.getcwd() + os.sep + self.audio_file),
-                  os.path.join(os.getcwd() + os.sep + "results" + os.sep + self.audio_file))
+        try:
+            print("Trying..")
+            print(os.path.join(os.getcwd() + os.sep + self.audio_file),
+                      os.path.join(os.getcwd() + os.sep + "results" + os.sep + self.audio_file))
+            os.rename(os.path.join(os.getcwd() + os.sep + self.audio_file),
+                      os.path.join(os.getcwd() + os.sep + "results" + os.sep + self.audio_file))
+        except FileExistsError:
+            # remove target, then move.. removing original file is kinda buggy
+            print("Removing duplicate file:", self.audio_file)
+            os.remove(os.path.join(os.getcwd() + os.sep + self.audio_file))
 
         # TODO: following line produces [WinError 2] for some reason which doesnt affect further processes ..
-        self.audio_file = os.path.join(os.getcwd() + os.sep + "results" + os.sep + self.audio_file)
+        try:
+            self.audio_file = os.path.join(os.getcwd() + os.sep + "results" + os.sep + self.audio_file)
+        except Exception as e:
+            print(e)
         self.process()
 
     def loading(self, thread):
